@@ -3,6 +3,8 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
   ActiveRoomsResponse,
+  BatchBookingResponse,
+  BookBatchRequest,
   BookRoomRequest,
   GridResponse,
   LeaveResponse,
@@ -21,6 +23,10 @@ export class RoomService {
 
   bookRoom(request: BookRoomRequest): Observable<ReservationResponse> {
     return this.http.post<ReservationResponse>('/api/reservations/book', request);
+  }
+
+  bookBatch(request: BookBatchRequest): Observable<BatchBookingResponse> {
+    return this.http.post<BatchBookingResponse>('/api/reservations/book-batch', request);
   }
 
   getActiveRooms(): Observable<ActiveRoomsResponse> {

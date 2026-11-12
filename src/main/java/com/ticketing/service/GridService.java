@@ -1,5 +1,6 @@
 package com.ticketing.service;
 
+import com.ticketing.config.BookingProperties;
 import com.ticketing.dto.GridResponse;
 import com.ticketing.dto.RoomGridItemDto;
 import com.ticketing.model.Reservation;
@@ -27,6 +28,7 @@ public class GridService {
     private final Clock clock;
     private final RoomRepository roomRepository;
     private final ReservationRepository reservationRepository;
+    private final BookingProperties bookingProperties;
 
     public GridResponse getNextIntervalGrid(UserPrincipal currentUser) {
         Instant now = clock.instant();
@@ -67,6 +69,7 @@ public class GridService {
                 .serverTime(now)
                 .slotStart(slotStart)
                 .slotEnd(slotEnd)
+                .maxRoomsPerRequest(bookingProperties.getMaxRoomsPerRequest())
                 .rooms(roomDtos)
                 .build();
     }

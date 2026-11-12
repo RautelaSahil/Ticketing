@@ -34,6 +34,7 @@ export interface GridResponse {
   serverTime: string;
   slotStart: string;
   slotEnd: string;
+  maxRoomsPerRequest: number;
   rooms: RoomGridItem[];
 }
 
@@ -72,4 +73,25 @@ export interface LeaveResponse {
   message: string;
   reservationId: string;
   status: string;
+}
+
+export interface BookBatchRequest {
+  roomIds: string[];
+  slotStart: string;
+}
+
+export interface BatchBookingResponse {
+  slotStart: string;
+  slotEnd: string;
+  reservations: ReservationResponse[];
+  message: string;
+}
+
+export interface BatchBookingError {
+  timestamp: string;
+  status: number;
+  error: string;
+  message: string;
+  path: string;
+  unavailableRooms?: string[];
 }

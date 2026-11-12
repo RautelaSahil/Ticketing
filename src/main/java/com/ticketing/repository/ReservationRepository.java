@@ -28,6 +28,10 @@ public interface ReservationRepository extends MongoRepository<Reservation, Stri
     boolean existsByUserIdAndRoomIdAndSlotStartAndStatusIn(
             String userId, String roomId, Instant slotStart, Collection<ReservationStatus> statuses);
 
+    // Phase 3 multi-room user duplicate check
+    List<Reservation> findByUserIdAndRoomIdInAndSlotStartAndStatusIn(
+            String userId, Collection<String> roomIds, Instant slotStart, Collection<ReservationStatus> statuses);
+
     // A user's own reservations, soonest first, so they can view and revoke future slots
     List<Reservation> findByUserIdAndStatusInOrderBySlotStartAsc(
             String userId, Collection<ReservationStatus> statuses);

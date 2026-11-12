@@ -120,6 +120,22 @@ public class DataInitializer implements ApplicationRunner {
         verifyCollectionIndexes("users");
         verifyCollectionIndexes("reservations");
         verifyCollectionIndexes("notifications");
+        verifyRequiredReservationIndexes();
+    }
+
+    private void verifyRequiredReservationIndexes() {
+        try {
+            List<IndexInfo> indexes = mongoTemplate.indexOps("reservations").getIndexInfo();
+            boolean hasUniqueBookedSlot = indexes.stream()
+                    .anyMatch(i -> "uniq_booked_room_slot".equals(i.getName()) && i.isUnique());
+            if (hasUniqueBookedSlot) {
+                log.info("✅ Verified critical Phase 3 index 'uniq_booked_room_slot' is ACTIVE and UNIQUE.");
+            } else {
+                log.warn("⚠️ Warning: 'uniq_booked_room_slot' not found in reservations index list! Verifying auto-index-creation.");
+            }
+        } catch (Exception e) {
+            log.warn("Could not verify reservation indexes: {}", e.getMessage());
+        }
     }
 
     private void verifyCollectionIndexes(String collectionName) {

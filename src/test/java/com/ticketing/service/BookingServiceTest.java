@@ -1,7 +1,9 @@
 package com.ticketing.service;
 
+import com.ticketing.config.BookingProperties;
 import com.ticketing.dto.BookRoomRequest;
 import com.ticketing.dto.ReservationResponse;
+import com.ticketing.exception.BatchBookingConflictException;
 import com.ticketing.exception.ResourceConflictException;
 import com.ticketing.exception.ResourceNotFoundException;
 import com.ticketing.model.Reservation;
@@ -19,6 +21,9 @@ import java.lang.reflect.Proxy;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -63,6 +68,17 @@ class BookingServiceTest {
                         }
                         return Optional.empty();
                     }
+                    if (method.getName().equals("findAllById")) {
+                        @SuppressWarnings("unchecked")
+                        Iterable<String> ids = (Iterable<String>) args[0];
+                        List<Room> result = new ArrayList<>();
+                        for (String id : ids) {
+                            if ("room-101-id".equals(id)) {
+                                result.add(mockRoom);
+                            }
+                        }
+                        return result;
+                    }
                     return null;
                 }
         );
@@ -74,26 +90,63 @@ class BookingServiceTest {
                     if (method.getName().equals("existsByUserIdAndRoomIdAndSlotStartAndStatusIn")) {
                         return alreadyExistsForUser.get();
                     }
-                    if (method.getName().equals("save")) {
-                        if (duplicateOnSave.get()) {
-                            throw new DuplicateKeyException("E11000 duplicate key error");
+                    if (method.getName().equals("findByUserIdAndRoomIdInAndSlotStartAndStatusIn")) {
+                        if (alreadyExistsForUser.get()) {
+                            return List.of(Reservation.builder()
+                                    .id("existing-res")
+                                    .roomId("room-101-id")
+                                    .userId("user-alice")
+                                    .slotStart(validNextStart)
+                                    .slotEnd(expectedNextEnd)
+                                    .status(ReservationStatus.BOOKED)
+                                    .build());
                         }
-                        Reservation r = (Reservation) args[0];
-                        r.setId("res-assigned-123");
-                        return r;
+                        return List.of();
+                    }
+                    if (method.getName().equals("findByRoomIdInAndSlotStartAndStatus")) {
+                        if (duplicateOnSave.get()) {
+                            return List.of(Reservation.builder()
+                                    .id("taken-res")
+                                    .roomId("room-101-id")
+                                    .userId("user-bob")
+                                    .slotStart(validNextStart)
+                                    .slotEnd(expectedNextEnd)
+                                    .status(ReservationStatus.BOOKED)
+                                    .build());
+                        }
+                        return List.of();
+                    }
+                    if (method.getName().equals("saveAll")) {
+                        if (duplicateOnSave.get()) {
+                            throw new DuplicateKeyException("E11000 duplicate key error on index uniq_booked_room_slot");
+                        }
+                        @SuppressWarnings("unchecked")
+                        Iterable<Reservation> list = (Iterable<Reservation>) args[0];
+                        List<Reservation> saved = new ArrayList<>();
+                        for (Reservation r : list) {
+                            r.setId("res-assigned-123");
+                            saved.add(r);
+                        }
+                        return saved;
                     }
                     return null;
                 }
         );
 
         Clock fixedClock = Clock.fixed(fixedNow, ZoneOffset.UTC);
-        bookingService = new BookingService(fixedClock, roomRepository, reservationRepository);
+        BatchBookingTransactionalService txService = new BatchBookingTransactionalService(
+                fixedClock, roomRepository, reservationRepository, new BookingProperties()
+        );
+        BatchBookingService batchBookingService = new BatchBookingService(
+                txService, reservationRepository, roomRepository
+        );
+        bookingService = new BookingService(batchBookingService);
 
         alice = UserPrincipal.create("user-alice", "alice", "ALICE", "hash", Set.of("ROLE_USER"));
     }
 
     @Test
-    @DisplayName("Should successfully book an available room for the next valid interval")
+    @DisplayName("Should successfully book an available room for the next valid interval via batch pipeline")
     void shouldBookRoomSuccessfully() {
         BookRoomRequest request = BookRoomRequest.builder()
                 .roomId("room-101-id")
@@ -136,7 +189,7 @@ class BookingServiceTest {
 
         assertThatThrownBy(() -> bookingService.bookRoom(request, alice))
                 .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessageContaining("Room not found or is currently inactive");
+                .hasMessageContaining("One or more rooms were not found or are inactive");
     }
 
     @Test
@@ -151,7 +204,7 @@ class BookingServiceTest {
 
         assertThatThrownBy(() -> bookingService.bookRoom(request, alice))
                 .isInstanceOf(ResourceConflictException.class)
-                .hasMessage("You have already reserved this room for this interval");
+                .hasMessageContaining("You already hold a reservation for room(s)");
     }
 
     @Test
@@ -165,7 +218,7 @@ class BookingServiceTest {
                 .build();
 
         assertThatThrownBy(() -> bookingService.bookRoom(request, alice))
-                .isInstanceOf(ResourceConflictException.class)
-                .hasMessage("Room was just booked by another user. Please select another room.");
+                .isInstanceOf(BatchBookingConflictException.class)
+                .hasMessageContaining("One or more selected rooms are unavailable");
     }
 }

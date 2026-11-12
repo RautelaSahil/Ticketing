@@ -8,6 +8,10 @@ spring:
 server:
   port: 8080
 
+ticketing:
+  booking:
+    max-rooms-per-request: 5
+
 logging:
   level:
     org.springframework.data.mongodb: INFO

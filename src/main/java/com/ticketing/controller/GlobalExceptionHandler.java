@@ -1,6 +1,7 @@
 package com.ticketing.controller;
 
 import com.ticketing.dto.ErrorResponse;
+import com.ticketing.exception.BatchBookingConflictException;
 import com.ticketing.exception.ResourceConflictException;
 import com.ticketing.exception.ResourceNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -53,6 +54,21 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.CONFLICT.value())
                 .error("Conflict")
                 .message(ex.getMessage())
+                .path(request.getRequestURI())
+                .build();
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    @ExceptionHandler(BatchBookingConflictException.class)
+    public ResponseEntity<ErrorResponse> handleBatchConflict(BatchBookingConflictException ex, HttpServletRequest request) {
+        log.warn("Batch booking conflict on {}: {} (unavailable rooms: {})",
+                request.getRequestURI(), ex.getMessage(), ex.getUnavailableRooms());
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .message(ex.getMessage())
+                .unavailableRooms(ex.getUnavailableRooms())
                 .path(request.getRequestURI())
                 .build();
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);

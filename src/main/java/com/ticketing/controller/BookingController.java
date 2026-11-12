@@ -1,8 +1,11 @@
 package com.ticketing.controller;
 
+import com.ticketing.dto.BatchBookingResponse;
+import com.ticketing.dto.BookBatchRequest;
 import com.ticketing.dto.BookRoomRequest;
 import com.ticketing.dto.ReservationResponse;
 import com.ticketing.security.UserPrincipal;
+import com.ticketing.service.BatchBookingService;
 import com.ticketing.service.BookingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -19,12 +22,21 @@ import org.springframework.web.bind.annotation.RestController;
 public class BookingController {
 
     private final BookingService bookingService;
+    private final BatchBookingService batchBookingService;
 
     @PostMapping("/book")
     public ResponseEntity<ReservationResponse> bookRoom(
             @RequestBody BookRoomRequest request,
             @AuthenticationPrincipal UserPrincipal currentUser) {
         ReservationResponse response = bookingService.bookRoom(request, currentUser);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping("/book-batch")
+    public ResponseEntity<BatchBookingResponse> bookBatch(
+            @RequestBody BookBatchRequest request,
+            @AuthenticationPrincipal UserPrincipal currentUser) {
+        BatchBookingResponse response = batchBookingService.bookBatch(currentUser, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }

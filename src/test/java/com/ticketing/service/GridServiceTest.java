@@ -1,5 +1,6 @@
 package com.ticketing.service;
 
+import com.ticketing.config.BookingProperties;
 import com.ticketing.dto.GridResponse;
 import com.ticketing.dto.RoomGridItemDto;
 import com.ticketing.model.Reservation;
@@ -61,7 +62,7 @@ class GridServiceTest {
         );
 
         Clock fixedClock = Clock.fixed(fixedNow, ZoneOffset.UTC);
-        gridService = new GridService(fixedClock, roomRepository, reservationRepository);
+        gridService = new GridService(fixedClock, roomRepository, reservationRepository, new BookingProperties());
 
         mockRooms.add(Room.builder()
                 .id("room-101-id")
@@ -97,6 +98,7 @@ class GridServiceTest {
         assertThat(response.getServerTime()).isEqualTo(fixedNow);
         assertThat(response.getSlotStart()).isEqualTo(expectedNextStart);
         assertThat(response.getSlotEnd()).isEqualTo(expectedNextEnd);
+        assertThat(response.getMaxRoomsPerRequest()).isEqualTo(5);
         assertThat(response.getRooms()).hasSize(3);
 
         assertThat(response.getRooms()).allMatch(r -> !r.isOccupied() && !r.isYours());

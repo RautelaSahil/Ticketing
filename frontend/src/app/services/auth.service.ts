@@ -1,6 +1,6 @@
 import { Injectable, signal, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, tap, catchError, of } from 'rxjs';
+import { Observable, tap, catchError, of, map } from 'rxjs';
 import { LoginRequest, RegisterRequest, User } from '../models/app.models';
 
 @Injectable({
@@ -27,6 +27,24 @@ export class AuthService {
         this.isLoading.set(false);
       },
     });
+  }
+
+  ensureAuthenticated(): Observable<boolean> {
+    if (this.currentUser()) {
+      return of(true);
+    }
+    return this.http.get<User>('/api/auth/me').pipe(
+      tap((user) => {
+        this.currentUser.set(user);
+        this.isLoading.set(false);
+      }),
+      map(() => true),
+      catchError(() => {
+        this.currentUser.set(null);
+        this.isLoading.set(false);
+        return of(false);
+      })
+    );
   }
 
   login(request: LoginRequest): Observable<User> {

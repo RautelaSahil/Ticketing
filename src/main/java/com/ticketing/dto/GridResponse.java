@@ -17,5 +17,6 @@ public class GridResponse {
     private Instant serverTime;
     private Instant slotStart;
     private Instant slotEnd;
+    private int maxRoomsPerRequest;
     private List<RoomGridItemDto> rooms;
 }
