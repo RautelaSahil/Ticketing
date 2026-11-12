@@ -133,6 +133,12 @@ public class DataInitializer implements ApplicationRunner {
             } else {
                 log.warn("⚠️ Warning: 'uniq_booked_room_slot' not found in reservations index list! Verifying auto-index-creation.");
             }
+
+            boolean hasRoomSlotIndex = indexes.stream()
+                    .anyMatch(i -> "idx_room_slot".equals(i.getName()));
+            if (hasRoomSlotIndex) {
+                log.info("✅ Verified Phase 4 index 'idx_room_slot' is ACTIVE.");
+            }
         } catch (Exception e) {
             log.warn("Could not verify reservation indexes: {}", e.getMessage());
         }

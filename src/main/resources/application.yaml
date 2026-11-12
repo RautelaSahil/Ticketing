@@ -11,6 +11,9 @@ server:
 ticketing:
   booking:
     max-rooms-per-request: 5
+    future-window-hours: 24
+    cancellation-cutoff-minutes: 10
+    max-future-reservations-per-user: 12
 
 logging:
   level:

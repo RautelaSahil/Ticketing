@@ -95,3 +95,64 @@ export interface BatchBookingError {
   path: string;
   unavailableRooms?: string[];
 }
+
+export type SlotAction = 'BOOK' | 'JOIN_QUEUE' | 'UNAVAILABLE' | 'YOURS_BOOKED' | 'YOURS_SCHEDULED';
+
+export interface SlotTimelineItem {
+  slotStart: string;
+  slotEnd: string;
+  action: SlotAction;
+  waitingCount: number;
+  cancellable: boolean;
+  cancellationDeadline?: string;
+}
+
+export interface SlotTimelineResponse {
+  roomId: string;
+  roomNumber: string;
+  serverTime: string;
+  windowStart: string;
+  windowEnd: string;
+  slots: SlotTimelineItem[];
+}
+
+export interface FutureBookRequest {
+  roomId: string;
+  slotStart: string;
+}
+
+export interface FutureBookingResponse {
+  reservationId: string;
+  roomId: string;
+  roomNumber: string;
+  slotStart: string;
+  slotEnd: string;
+  status: 'BOOKED' | 'SCHEDULED';
+  message: string;
+}
+
+export interface CancelReservationResponse {
+  reservationId: string;
+  previousStatus: 'BOOKED' | 'SCHEDULED';
+  cancelledAt: string;
+  message: string;
+}
+
+export interface FutureReservationSummary {
+  reservationId: string;
+  roomId: string;
+  roomNumber: string;
+  slotStart: string;
+  slotEnd: string;
+  status: 'BOOKED' | 'SCHEDULED';
+  cancellable: boolean;
+  cancellationDeadline: string;
+  createdAt: string;
+}
+
+export interface MyFutureReservationsResponse {
+  serverTime: string;
+  totalCount: number;
+  reservations: FutureReservationSummary[];
+}
+

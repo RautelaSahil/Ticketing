@@ -6,7 +6,6 @@ import com.ticketing.dto.BookBatchRequest;
 import com.ticketing.dto.BookRoomRequest;
 import com.ticketing.dto.ReservationResponse;
 import com.ticketing.exception.BatchBookingConflictException;
-import com.ticketing.exception.ResourceConflictException;
 import com.ticketing.model.Reservation;
 import com.ticketing.model.ReservationStatus;
 import com.ticketing.model.Room;

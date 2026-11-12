@@ -87,4 +87,70 @@ public final class TimeSlotUtils {
         long seconds = Duration.between(now, slotEnd).toSeconds();
         return Math.max(0L, seconds);
     }
+
+    /**
+     * Checks if an instant lies strictly on a 5-minute boundary in UTC
+     * with seconds and nanoseconds zeroed out (e.g. 12:00:00.000, 12:05:00.000).
+     */
+    public static boolean isOnBoundary(Instant instant) {
+        if (instant == null) {
+            return false;
+        }
+        ZonedDateTime utc = instant.atZone(ZoneOffset.UTC);
+        return utc.getSecond() == 0 && utc.getNano() == 0 && (utc.getMinute() % INTERVAL_MINUTES == 0);
+    }
+
+    /**
+     * Validates if a slot start is on a 5-minute boundary and falls within
+     * the allowed future booking window [getNextIntervalStart(now), now + windowDuration].
+     */
+    public static boolean isWithinFutureWindow(Instant slotStart, Instant now, Duration windowDuration) {
+        if (slotStart == null || now == null || windowDuration == null) {
+            return false;
+        }
+        if (!isOnBoundary(slotStart)) {
+            return false;
+        }
+        Instant nextIntervalStart = getNextIntervalStart(now);
+        Instant maxWindowEnd = now.plus(windowDuration);
+        return !slotStart.isBefore(nextIntervalStart) && !slotStart.isAfter(maxWindowEnd);
+    }
+
+    /**
+     * Enforces the strict cutoff rule (e.g. 10 minutes):
+     * Action is allowed if and only if slotStart - now > cutoff.
+     * E.g. with 10 min cutoff: 10m01s is true; 10m00s and 9m59s are false.
+     */
+    public static boolean isCancellationAllowed(Instant slotStart, Instant now, Duration cutoff) {
+        if (slotStart == null || now == null || cutoff == null) {
+            return false;
+        }
+        return now.plus(cutoff).isBefore(slotStart);
+    }
+
+    /**
+     * Queue joining is allowed only when more than cutoff (e.g. 10 minutes) remains before start.
+     */
+    public static boolean canJoinQueue(Instant slotStart, Instant now, Duration cutoff) {
+        return isCancellationAllowed(slotStart, now, cutoff);
+    }
+
+    /**
+     * Generates an unmodifiable list of all 5-minute interval start times
+     * from getNextIntervalStart(now) up to now + windowDuration.
+     */
+    public static java.util.List<Instant> generateFutureSlotStarts(Instant now, Duration windowDuration) {
+        if (now == null || windowDuration == null) {
+            return java.util.List.of();
+        }
+        Instant start = getNextIntervalStart(now);
+        Instant end = now.plus(windowDuration);
+        java.util.List<Instant> slots = new java.util.ArrayList<>();
+        Instant current = start;
+        while (!current.isAfter(end)) {
+            slots.add(current);
+            current = current.plus(INTERVAL_DURATION);
+        }
+        return java.util.Collections.unmodifiableList(slots);
+    }
 }

@@ -68,7 +68,7 @@ public class BatchBookingTransactionalService {
 
         List<String> uniqueRoomIds = request.getRoomIds().stream()
                 .filter(id -> id != null && !id.trim().isEmpty())
-                .map(String::trim)
+                .map(id -> id.trim())
                 .distinct()
                 .toList();
 

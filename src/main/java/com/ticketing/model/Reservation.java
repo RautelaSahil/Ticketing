@@ -37,7 +37,13 @@ import java.time.Instant;
         @CompoundIndex(name = "idx_slot_status", def = "{ 'slotStart': 1, 'status': 1 }"),
 
         // Performance: user's active room and own reservations
-        @CompoundIndex(name = "idx_user_status_slot", def = "{ 'userId': 1, 'status': 1, 'slotStart': 1 }")
+        @CompoundIndex(name = "idx_user_status_slot", def = "{ 'userId': 1, 'status': 1, 'slotStart': 1 }"),
+
+        // Performance: Phase 4 room 24h timeline range queries
+        @CompoundIndex(name = "idx_room_slot", def = "{ 'roomId': 1, 'slotStart': 1 }"),
+
+        // Performance: Phase 4 user cap and upcoming reservations range count
+        @CompoundIndex(name = "idx_user_slot_status", def = "{ 'userId': 1, 'slotStart': 1, 'status': 1 }")
 })
 public class Reservation {
 
